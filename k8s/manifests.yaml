@@ -26,5 +26,12 @@ spec:
             limits:
               memory: "2Gi"
               cpu: "2"
+          env:
+            - name: GH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: github-token
+                  key: token
+                  optional: true
           stdin: true
           tty: true

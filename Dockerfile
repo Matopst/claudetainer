@@ -39,8 +39,18 @@ RUN curl -fsSL https://github.com/derailed/k9s/releases/download/${K9S_VERSION}/
     && curl -fsSL https://github.com/stern/stern/releases/download/v${STERN_VERSION}/stern_${STERN_VERSION}_linux_amd64.tar.gz | tar -xz -C /usr/local/bin stern \
     && curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
+# GitHub CLI + just (used to set up the developer-platform-agent repo)
+ARG JUST_VERSION=1.59.0
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    && echo 'deb [signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main' > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update && apt-get install -y --no-install-recommends gh \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -fsSL https://just.systems/install.sh | bash -s -- --tag ${JUST_VERSION} --to /usr/local/bin
+
 # Install Claude CLI globally
 RUN npm install -g @anthropic-ai/claude-code
+
+COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # Create non-root user
 RUN useradd -m -s /bin/bash claude
@@ -49,5 +59,5 @@ RUN useradd -m -s /bin/bash claude
 USER claude
 WORKDIR /home/claude
 
-# Keep the container alive
-CMD ["sleep", "infinity"]
+# Sets up the agent repo, then keeps the container alive
+CMD ["/usr/local/bin/entrypoint.sh"]

@@ -50,9 +50,26 @@ spec:
             limits:
               memory: "2Gi"
               cpu: "2"
+          env:
+            - name: GH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: github-token
+                  key: token
+                  optional: true
           stdin: true
           tty: true
 ```
+
+## Developer platform agent
+
+On start the pod clones `intility/developer-platform-agent` into `~/developer-platform-agent` and runs `just setup` and `just pull`. This needs a GitHub token with read access to the intility repos, provided as a secret (the pod still starts without it, it just skips this step):
+
+```bash
+kubectl create secret generic github-token --from-literal=token=<token>
+```
+
+Restart the pod to re-sync, or run `just pull` in the repo.
 
 ## What's included
 
@@ -68,6 +85,7 @@ spec:
 - k9s (TUI cluster viewer)
 - stern (multi-pod log tailing)
 - helm (release inspection)
+- gh and just
 
 ## RBAC
 
