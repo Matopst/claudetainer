@@ -2,7 +2,7 @@
 
 Claude CLI in Kubernetes for cluster troubleshooting.
 
-A pod you deploy into your cluster, exec into, and use Claude to inspect resources, read logs, exec into other pods, and diagnose issues.
+A pod you deploy into your cluster, exec into, and use Claude to inspect resources, read logs, and diagnose issues, with whatever access its ServiceAccount has.
 
 ## Quick start
 
@@ -17,48 +17,11 @@ kubectl exec -it deploy/claudetainer -- claude
 /login
 ```
 
-## Full YAML
+## Deployment YAML
 
-Copy-paste the block below to deploy without cloning the repo.
+Copy-paste the block below to deploy without cloning the repo. Set `serviceAccountName` to your existing read-only ServiceAccount (default: `claudetainer`).
 
 ```yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: claudetainer
-  namespace: default
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: claudetainer
-rules:
-  # Read all resources
-  - apiGroups: ["*"]
-    resources: ["*"]
-    verbs: ["get", "list", "watch"]
-  # Exec into pods
-  - apiGroups: [""]
-    resources: ["pods/exec", "pods/attach"]
-    verbs: ["create"]
-  # Read pod logs
-  - apiGroups: [""]
-    resources: ["pods/log"]
-    verbs: ["get"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: claudetainer
-subjects:
-  - kind: ServiceAccount
-    name: claudetainer
-    namespace: default
-roleRef:
-  kind: ClusterRole
-  name: claudetainer
-  apiGroup: rbac.authorization.k8s.io
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -101,30 +64,19 @@ spec:
 - ping
 - vim
 - net-tools
+- openssl, netcat, traceroute, ps
+- k9s (TUI cluster viewer)
+- stern (multi-pod log tailing)
+- helm (release inspection)
 
-## RBAC permissions
+## RBAC
 
-The pod's service account is granted a ClusterRole that allows it to:
-
-- Read all resources across all API groups (get, list, watch)
-- Exec into and attach to pods
-- Read pod logs
+No RBAC is created. Attach the pod to an existing ServiceAccount (read-only access) via `serviceAccountName` in the Deployment.
 
 ## Clean up
 
-If deployed from the repo:
-
-```bash
-kubectl delete -f k8s/manifests.yaml
-```
-
-If deployed via copy-paste, delete the individual resources:
-
 ```bash
 kubectl delete deployment claudetainer
-kubectl delete clusterrolebinding claudetainer
-kubectl delete clusterrole claudetainer
-kubectl delete serviceaccount claudetainer
 ```
 
 ## Building from source
